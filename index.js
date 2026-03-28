@@ -4,7 +4,10 @@ export default {
     const targetUrl = url.searchParams.get('url');
 
     if (!targetUrl) {
-      return new Response('Usage: ?url=http://example.com/stream.m3u8', { status: 400 });
+      return new Response('Usage: ?url=https://target-stream.com/playlist.m3u8', { 
+        status: 400,
+        headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
     try {
@@ -17,35 +20,34 @@ export default {
 
       const contentType = response.headers.get('content-type') || '';
       
-      // If it's a playlist (.m3u8), we need to rewrite the links inside it
-      if (contentType.includes('application/vnd.apple.mpegurl') || contentType.includes('audio/mpegurl') || targetUrl.endsWith('.m3u8')) {
+      // Handle Playlist Rewriting (.m3u8)
+      if (targetUrl.includes('.m3u8') || contentType.includes('mpegurl')) {
         let text = await response.text();
         const base = new URL(targetUrl);
         const proxyBase = `${url.origin}${url.pathname}?url=`;
 
-        // This regex finds lines that don't start with # (the actual URLs)
         const rewrittenText = text.split('\n').map(line => {
-          if (line.trim() && !line.startsWith('#')) {
-            // Convert relative paths to absolute paths, then wrap in proxy URL
-            const absoluteUrl = new URL(line.trim(), base.href).href;
+          const trimmedLine = line.trim();
+          if (trimmedLine && !trimmedLine.startsWith('#')) {
+            const absoluteUrl = new URL(trimmedLine, base.href).href;
             return `${proxyBase}${encodeURIComponent(absoluteUrl)}`;
           }
           return line;
         }).join('\n');
 
         return new Response(rewrittenText, {
-          headers: {
+          headers: { 
             'Content-Type': 'application/vnd.apple.mpegurl',
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': '*' 
           }
         });
       }
 
-      // If it's a video segment (.ts), just pipe the stream directly
+      // Handle Video Segments (.ts, .m4s, etc.)
       const newHeaders = new Headers(response.headers);
       newHeaders.set('Access-Control-Allow-Origin', '*');
       newHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-      newHeaders.delete('content-security-policy'); // Remove restrictions
+      newHeaders.delete('content-security-policy');
 
       return new Response(response.body, {
         status: response.status,
@@ -53,7 +55,7 @@ export default {
       });
 
     } catch (e) {
-      return new Response('Error: ' + e.message, { status: 500 });
+      return new Response('Proxy Error: ' + e.message, { status: 500 });
     }
   }
 };
