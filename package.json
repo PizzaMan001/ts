@@ -1,16 +1,12 @@
 {
-	"name": "hls",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vites"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.5.2",
-		"wrangler": "^3.60.3",
-		"vitest": "2.0.5"
-	}
+  "name": "hls",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy index.js",
+    "dev": "wrangler dev index.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
 }
